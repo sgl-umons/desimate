@@ -5,36 +5,8 @@ database = "desimate.db"
 paragraph = ["paragraph", 'list', "table"] # DEFAULT VALUE, DO NOT REMOVE
 md-line = ["text", 'listItem', "table", "tableRow"] # DEFAULT VALUE, DO NOT REMOVE
 
-[cnned.train]
-
-input_file = "./train_data/training.jsonl"
-n_training = 10000
-n_query = 2500
-sampling_threshold = 250
-maximum_length = 2048
-epochs = 50
-batch_size = 256
-embedding_size = 128
-save_every=5
-
-[nscnn.train]
-
-input_file = "./train_data/training.jsonl"
-n_training = 10000
-n_query = 2500
-maximum_length = 2048
-epochs = 500
-batch_size = 128
-embedding_size = 128
-save_every=5
-lr=0.005
-channel=64
-layers=6
-patience=-1
-
 [train.cnned]
 
-input_file = "./train_data/training.jsonl"
 n_training = 10000
 n_query = 2500
 sampling_threshold = 250
@@ -46,7 +18,6 @@ save_every=5
 
 [train.nscnn]
 
-input = "./train_data/training.jsonl"
 n_training = 10000
 n_query = 2500
 maximum_length = 2048
@@ -55,3 +26,6 @@ batch_size = 128
 embedding_size = 128
 save_every=5
 lr=0.005
+channel=64
+layers=6
+patience=-1
