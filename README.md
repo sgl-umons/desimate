@@ -1,4 +1,4 @@
-# DeSiMaTe: Detecting Similar Markdown Text
+# DeSiMaTe: Detect Similar Markdown Text
 
 [![License](https://badgen.net/pypi/license/desimate)](https://github.com/sgl-umons/desimate/blob/master/LICENSE.txt)
 [![Last release](https://badgen.net/github/release/sgl-umons/desimate/stable)](https://badgen.net/github/release/sgl-umons/desimate/stable)

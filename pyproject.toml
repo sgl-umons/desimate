@@ -1,7 +1,7 @@
 [project]
 name = "DeSiMaTe"
 version = "0.1.0"
-description = "Add your description here"
+description = "DeSiMaTe: Detect Similar Markdown Text"
 readme = "README.md"
 authors = [
     { name = "Guillaume Cardoen", email = "Guillaume.CARDOEN@umons.ac.be" }
