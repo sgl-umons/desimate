@@ -172,6 +172,10 @@ class CNNEDTrainer(VectorizerTrainer):
         optimizer = Adam(model.parameters(), lr=lr)
         best = 1e10
         best_epoch = -1
+        
+        p = Path("models")
+        if not p.exists():
+            p.mkdir(exist_ok=True)
 
         for epoch in range(epochs):
             agg, agg_r, agg_m = self._step(

@@ -124,6 +124,10 @@ class NeuroSeedCNNTrainer(VectorizerTrainer):
     ):
         task = self.progress.add_task("Training", total=epochs)
 
+        p = Path("models")
+        if not p.exists():
+            p.mkdir(exist_ok=True)
+
         loss = self._loss4
         # loss = MSELoss()
         best = 1e10
