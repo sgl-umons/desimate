@@ -8,6 +8,7 @@ import click
 import duckdb
 import numpy as np
 import pandas as pd
+from joblib import Memory
 from rich.logging import RichHandler
 from rich import print
 
@@ -453,7 +454,7 @@ def nscnn_train_cli(
     database: str | None,
 ):
     """
-    Train a string-embedding model such that the Euclidean distance between
+    Train a string-embedding model (NeuroSEED) such that the Euclidean distance between
     the embeddings of two strings approximates their (normalized)
     Levenshtein distance.
     """
@@ -552,6 +553,211 @@ def nscnn_train(
         save_every=save_every,
         patience=patience,
         distance_metric=DISTANCE_METRIC[distance_metric],
+    )
+
+
+@train.command("cnned")
+@click.option(
+    "--input",
+    type=click.Path(exists=True, readable=True),
+    default=None,
+    help="The path to a file (JSON, JSON Lines or plain text) from which "
+    "the training texts are sampled (one per line if plain text; list of string "
+    "if JSON or one string per line if JSONL).",
+)
+@click.option(
+    "--output",
+    type=click.Path(writable=True, dir_okay=False, exists=False),
+    required=True,
+    help="The path where the trained model will be saved.",
+)
+@click.option(
+    "--char-encoder",
+    type=click.Choice(list(CHAR_VECTORIZERS.keys())),
+    default="utf8",
+    help="The character vectorization used to feed the model (default: utf8).",
+)
+@click.option(
+    "--n-training",
+    type=int,
+    default=1000,
+    help="The number of texts used for training (default: 1000).",
+)
+@click.option(
+    "--n-query",
+    type=int,
+    default=1000,
+    help="The number of texts used for the validation query (default: 1000).",
+)
+@click.option(
+    "--sampling-threshold",
+    type=int,
+    default=500,
+    help="The number of texts used for the KNN search in CNN-ED (default: 500).",
+)
+@click.option(
+    "--maximum-length",
+    type=int,
+    default=None,
+    help="The maximum length of the texts.",
+)
+@click.option(
+    "--epochs",
+    type=int,
+    default=20,
+    help="The number of training epochs (default: 20).",
+)
+@click.option(
+    "--batch-size",
+    type=int,
+    default=64,
+    help="The batch size (default: 64).",
+)
+@click.option(
+    "--embedding-size",
+    type=int,
+    default=128,
+    help="The size of the output embedding (default: 128).",
+)
+@click.option(
+    "--channel",
+    type=int,
+    default=8,
+    help="The number of convolution channels (default: 8).",
+)
+@click.option(
+    "--lr",
+    type=float,
+    default=1e-3,
+    help="The learning rate (default: 1e-3).",
+)
+@click.option(
+    "--save-every",
+    type=int,
+    default=5,
+    help="Save the model every N epochs (default: 5).",
+)
+@click.option(
+    "--patience",
+    type=int,
+    default=-1,
+    help="The number of epochs without improvement to wait before stopping "
+    "the training (default: -1, i.e., no early stopping).",
+)
+@click.option(
+    "--database",
+    type=click.Path(readable=True, writable=True, dir_okay=False, file_okay=True),
+    default=None,
+    help="Sample the training texts from this DuckDB database instead of `--input`.",
+)
+def cnned_train_cli(
+    input: str,
+    output: str,
+    char_encoder: str,
+    n_training: int,
+    n_query: int,
+    sampling_threshold: int,
+    maximum_length: int | None,
+    epochs: int,
+    batch_size: int,
+    embedding_size: int,
+    channel: int,
+    lr: float,
+    save_every: int,
+    patience: int,
+    database: str | None,
+):
+    """
+    Train a string-embedding model (CNN-ED) such that the Euclidean distance between
+    the embeddings of two strings approximates their (normalized)
+    Levenshtein distance.
+    """
+    cnned_train(
+        input,
+        output,
+        char_encoder,
+        n_training,
+        n_query,
+        sampling_threshold,
+        maximum_length,
+        epochs,
+        batch_size,
+        embedding_size,
+        channel,
+        lr,
+        save_every,
+        patience,
+        database,
+    )
+
+
+def cnned_train(
+    input: str | None,
+    output: str,
+    char_vectorizer: str,
+    n_training: int,
+    n_query: int,
+    sampling_threshold: int,
+    maximum_length: int | None,
+    epochs: int,
+    batch_size: int,
+    embedding_size: int,
+    channel: int,
+    lr: float,
+    save_every: int,
+    patience: int,
+    database: str | None,
+):
+    output = Path(output)
+    cv = CHAR_VECTORIZERS.get(char_vectorizer, None)
+    if not cv:
+        logger.error(
+            "Unknown char encoders '%s'. Must be one of '%s'. Stopping now...",
+            char_vectorizer,
+            ",".join(CHAR_VECTORIZERS.keys()),
+        )
+        exit(1)
+    if database is None:
+        database = toolconfig.get("database", None)
+
+    if input:
+        input_file = Path(input)
+        texts = read_input(input_file)
+    elif database:
+        import duckdb
+
+        n = int(n_training) + int(n_query)
+        texts = []
+        sql = f"""
+        SELECT value
+        FROM (SELECT * FROM paths) 
+        USING SAMPLE {n};
+        """
+        with duckdb.connect(database) as db:
+            result = db.execute(sql)
+            while rows := result.fetchmany(1_000):
+                texts.extend((_t[0] for _t in rows))
+    else:
+        logger.error("No data source was given! Stopping now...")
+        exit(1)
+
+    from desimate.encoders.cnned import CNNEDTrainer
+
+    trainer = CNNEDTrainer(OrdCV(max_length=maximum_length), memory=Memory())
+    trainer.execute(
+        output_model=output,
+        texts=texts,
+        n_training=n_training,
+        n_query=n_query,
+        sampling_threshold=sampling_threshold,
+        maximum_length=maximum_length,
+        epochs=epochs,
+        batch_size=batch_size,
+        embedding_size=embedding_size,
+        channel=channel,
+        lr=lr,
+        save_every=save_every,
+        patience=patience,
     )
 
 

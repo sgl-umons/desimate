@@ -191,6 +191,7 @@ class CNNEDTrainer(VectorizerTrainer):
                 f"Vr:{v_agg_r:.2f}\t"
                 f"Vm: {v_agg_m:.2f}"
             )
+
             if save_every and epoch % save_every == 0:
                 p = Path("models") / f"model_{epoch}.torch"
                 logger.info("Saving model at '%s' for epoch %d... ", str(p), epoch)
@@ -205,7 +206,7 @@ class CNNEDTrainer(VectorizerTrainer):
                 )
                 self._save_model(model, p, maximum_length)
 
-            if epoch - best_epoch > patience:
+            if 0 < patience < epoch - best_epoch:
                 logger.info("Stopping there was no enhancements in %d epochs", patience)
                 break
 
@@ -227,7 +228,6 @@ class CNNEDTrainer(VectorizerTrainer):
         lr: float = 1e-3,
         save_every: int | None = 5,
         patience: int = 20,
-        cache_distance_matrix: Path = None,
     ):
         logger.debug("Starting training")
         output_model.parent.mkdir(exist_ok=True)
