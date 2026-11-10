@@ -139,9 +139,9 @@ class GridAgglomerative(VectorClustering):
                 list_reduce(
                     list_transform(
                         list_zip(xs, ?),
-                        p -> greatest(0, abs(p[1] - p[2]) - 1) ^ 2
+                        lambda p: greatest(0, abs(p[1] - p[2]) - 1) ^ 2
                     ),
-                    (acc, x) -> acc + x,
+                    lambda acc, x: acc + x,
                     0
                 )
             ) <= {max_distance}
