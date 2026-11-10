@@ -1,6 +1,6 @@
 [project]
-name = "DeSiMaTe"
-version = "0.1.1"
+name = "desimate"
+version = "0.2.0"
 description = "DeSiMaTe: Detect Similar Markdown Text"
 readme = "README.md"
 authors = [
