@@ -12,3 +12,16 @@ class Config(dict):
 
 
 config = Config()
+# DEFAULT HARDCODED CONFIG (to be sure the default it works)
+config.update(
+    {
+        "parsing": {
+            "markdown": {
+                "granularities": {
+                    "paragraph": ["paragraph", "list", "table"],
+                    "md-line": ["text", "listItem", "table", "tableRow"],
+                }
+            }
+        }
+    }
+)
